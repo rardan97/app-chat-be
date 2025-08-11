@@ -1,10 +1,7 @@
 package com.blackcode.app_chat_be.model;
 
-
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.sql.Timestamp;
 
 @Data
 @NoArgsConstructor
@@ -12,14 +9,12 @@ import java.sql.Timestamp;
 @Getter
 @Setter
 @Entity
-@Table(name = "tb_chat_room")
-public class ChatRoom {
+@Table(name = "tb_group_chat_detail")
+public class GroupChatDetail {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long chatRoomId;
-
-    private boolean is_group;
-
-    private Timestamp created_at;
+    private ChatRoom chatRoomId;
+    private String name;
+    private String description;
 }

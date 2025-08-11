@@ -55,7 +55,7 @@ public class AuthController {
     @Autowired
     UserRefreshTokenService userRefreshTokenService;
 
-    @PostMapping("/signin")
+    @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginReq loginRequest){
         try {
             Authentication authentication = authenticationManager.authenticate(

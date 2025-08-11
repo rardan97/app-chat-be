@@ -4,8 +4,11 @@ import jakarta.annotation.Generated;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.Table;
 import lombok.*;
 import org.springframework.data.annotation.Id;
+
+import java.sql.Timestamp;
 
 @Data
 @NoArgsConstructor
@@ -13,6 +16,7 @@ import org.springframework.data.annotation.Id;
 @Getter
 @Setter
 @Entity
+@Table(name = "tb_user")
 public class Users {
 
     @Id
@@ -28,6 +32,10 @@ public class Users {
     private String password;
 
     private String status;
+
+    private Timestamp created_at;
+
+    private Timestamp updated_at;
 
     public Users(String displayName, String email, String username, String password) {
         this.displayName = displayName;
