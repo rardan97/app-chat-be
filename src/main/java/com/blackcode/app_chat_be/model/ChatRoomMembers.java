@@ -17,8 +17,15 @@ public class ChatRoomMembers {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long chatRoomMembersId;
+
+    @OneToOne
+    @JoinColumn(name = "chatRoom_id", referencedColumnName = "chatRoomId")
     private ChatRoom chatRoom;
+
+    @OneToOne
+    @JoinColumn(name = "user_id", referencedColumnName = "userId")
     private Users users;
+
     private Timestamp joined_at;
 
 }

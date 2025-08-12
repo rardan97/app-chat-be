@@ -11,6 +11,7 @@ import com.blackcode.app_chat_be.security.jwt.JwtUtils;
 import com.blackcode.app_chat_be.security.service.UserDetailsImpl;
 import com.blackcode.app_chat_be.security.service.UserRefreshTokenService;
 import com.blackcode.app_chat_be.security.service.UserTokenService;
+import com.blackcode.app_chat_be.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -32,118 +33,51 @@ import java.util.Optional;
 @RequestMapping("/api/auth/user")
 public class AuthController {
 
-    @Autowired
-    AuthenticationManager authenticationManager;
+    private final AuthService authService;
 
-    @Autowired
-    UserRepository userRepository;
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
 
-    @Autowired
-    UserTokenRepository userTokenRepository;
-
-
-
-    @Autowired
-    PasswordEncoder encoder;
-
-    @Autowired
-    private UserTokenService userTokenService;
-
-    @Autowired
-    JwtUtils jwtUtils;
-
-    @Autowired
-    UserRefreshTokenService userRefreshTokenService;
 
     @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginReq loginRequest){
+    public ResponseEntity<?> login(@Valid @RequestBody LoginReq loginRequest){
         try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-
-            String jwt = jwtUtils.generateJwtTokenUser(userDetails);
-            userTokenService.processUserTokenRefresh(userDetails.getUsername(), jwt);
-
-            UserRefreshToken refreshToken = userRefreshTokenService.createRefreshToken(jwt, userDetails.getUserId());
-            return ResponseEntity.status(HttpStatus.OK).body(new JwtRes(
-                    jwt,
-                    refreshToken.getToken(),
-                    userDetails.getUserId(),
-                    userDetails.getUsername()));
-        }catch (BadCredentialsException e) {
+            JwtRes response = authService.authenticateUser(loginRequest);
+            return ResponseEntity.ok(response);
+        } catch (BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
         } catch (AccountExpiredException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Account has expired");
         } catch (LockedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Account is locked");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while processing the login request");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Login error");
         }
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody SignUpReq signupRequest){
-        System.out.println("username : "+signupRequest.getUsername());
-        if(userRepository.existsByUserName(signupRequest.getUsername())){
-            return ResponseEntity.badRequest().body(new MessageRes("Error : Username is already taken!"));
+    public ResponseEntity<?> signup(@Valid @RequestBody SignUpReq signupRequest){
+        try {
+            return ResponseEntity.ok(authService.registerUser(signupRequest));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageRes(e.getMessage()));
         }
-
-        Users user = new Users(
-                signupRequest.getDisplayName(),
-                signupRequest.getEmail(),
-                signupRequest.getUsername(),
-                encoder.encode(signupRequest.getPassword())
-                );
-        userRepository.save(user);
-        return ResponseEntity.ok(new MessageRes("User registered successfully!"));
     }
 
     @PostMapping("/refreshtoken")
     public ResponseEntity<?> refreshtoken(@Valid @RequestBody TokenRefreshReq request){
-        String requestRefreshToken = request.getRefreshToken();
-        return userRefreshTokenService.findByToken(requestRefreshToken)
-                .map(userRefreshTokenService::verifyExpiration)
-                .map(UserRefreshToken::getUser)
-                .map(user -> {
-                    String token = jwtUtils.generateTokenFromUsername(user.getUsername());
-                    userTokenService.processUserTokenRefresh(user.getUsername(), token);
-                    return ResponseEntity.ok(new TokenRefreshRes(token, requestRefreshToken));
-                }).orElseThrow(() -> new TokenRefreshException(requestRefreshToken,
-                        "Refresh token is not in database!"));
+        try {
+            return ResponseEntity.ok(authService.refreshToken(request));
+        } catch (TokenRefreshException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        }
     }
 
     @PostMapping("/signout")
-    public ResponseEntity<?> logout(
+    public ResponseEntity<?> signout(
             HttpServletRequest request,
             HttpServletResponse response) {
-        System.out.println("Test request : "+request.getMethod());
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated() &&
-                !(authentication instanceof AnonymousAuthenticationToken)) {
-            String token = request.getHeader("Authorization");
-            if (token != null && token.startsWith("Bearer ")) {
-                UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-                Long userId = userDetails.getUserId();
-                String jwtToken = token.substring(7);
-                Optional<UserToken> userTokenData = userTokenRepository.findByToken(jwtToken);
-                if(userTokenData.isPresent()){
-                    System.out.println("Validasi 3");
-                    userRefreshTokenService.deleteByUserId(userId);
-                    userTokenData.get().setIsActive(false);
-                    userTokenRepository.save(userTokenData.get());
-                    return ResponseEntity.ok(new MessageRes("Log out successful!"));
-                }else{
-                    System.out.println("check token not found");
-                    return ResponseEntity.ok(new MessageRes("Log out Failed!!!"));
-                }
-            } else {
-                return ResponseEntity.ok(new MessageRes("Authorization not null"));
-            }
-        }else {
-            return ResponseEntity.ok(new MessageRes("authentication not found"));
-        }
+        return ResponseEntity.ok(authService.logout(request));
     }
 }

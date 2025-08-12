@@ -60,7 +60,7 @@ public class UserTokenService {
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime();
 
-        Optional<Users> dataUser = userRepository.findByUserName(userName);
+        Optional<Users> dataUser = userRepository.findByUsername(userName);
         if(dataUser.isPresent()){
             Optional<UserToken> userTokenData = userTokenRepository.findByUserId(dataUser.get().getUserId());
             if(userTokenData.isPresent()){
