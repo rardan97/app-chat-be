@@ -2,32 +2,17 @@ package com.blackcode.app_chat_be.controller;
 
 import com.blackcode.app_chat_be.dto.user.*;
 import com.blackcode.app_chat_be.exception.TokenRefreshException;
-import com.blackcode.app_chat_be.model.UserRefreshToken;
-import com.blackcode.app_chat_be.model.UserToken;
-import com.blackcode.app_chat_be.model.Users;
-import com.blackcode.app_chat_be.repository.UserRepository;
-import com.blackcode.app_chat_be.repository.UserTokenRepository;
-import com.blackcode.app_chat_be.security.jwt.JwtUtils;
-import com.blackcode.app_chat_be.security.service.UserDetailsImpl;
-import com.blackcode.app_chat_be.security.service.UserRefreshTokenService;
-import com.blackcode.app_chat_be.security.service.UserTokenService;
 import com.blackcode.app_chat_be.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth/user")
@@ -38,7 +23,6 @@ public class AuthController {
     public AuthController(AuthService authService) {
         this.authService = authService;
     }
-
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginReq loginRequest){
@@ -57,7 +41,7 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<?> signup(@Valid @RequestBody SignUpReq signupRequest){
+    public ResponseEntity<?> signUp(@Valid @RequestBody SignUpReq signupRequest){
         try {
             return ResponseEntity.ok(authService.registerUser(signupRequest));
         } catch (Exception e) {
@@ -66,7 +50,7 @@ public class AuthController {
     }
 
     @PostMapping("/refreshtoken")
-    public ResponseEntity<?> refreshtoken(@Valid @RequestBody TokenRefreshReq request){
+    public ResponseEntity<?> refreshToken(@Valid @RequestBody TokenRefreshReq request){
         try {
             return ResponseEntity.ok(authService.refreshToken(request));
         } catch (TokenRefreshException e) {
@@ -75,7 +59,7 @@ public class AuthController {
     }
 
     @PostMapping("/signout")
-    public ResponseEntity<?> signout(
+    public ResponseEntity<?> signOut(
             HttpServletRequest request,
             HttpServletResponse response) {
         return ResponseEntity.ok(authService.logout(request));
